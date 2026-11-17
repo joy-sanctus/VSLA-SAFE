@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>VSLA SAFE - No Cash In Hands</title>
+<style>body{margin:0;font-family:Arial;background:#fdf8f0;text-align:center}.top{background:#1a3a2a;color:white;padding:25px}.box{background:white;margin:12px auto;max-width:600px;padding:15px;border-radius:12px;text-align:left}input,select{width:95%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px}button{background:#e8b400;border:none;padding:12px;width:100%;border-radius:30px;font-weight:bold;font-size:16px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:8px;text-align:left}</style>
+</head><body>
+<div class="top"><h1>VSLA SAFE 🔒</h1><p>No Cash In Hands. Everything On Record.</p><h2 id="total">Total in Box: 0 UGX</h2></div>
+
+<div class="box"><h3>Add Member / Record</h3>
+<input id="name" placeholder="Member Name e.g. Amina">
+<select id="type"><option value="Savings">Savings +</option><option value="Loan">Loan Out -</option><option value="Repayment">Loan Repayment +</option></select>
+<input id="amount" type="number" placeholder="Amount UGX e.g. 20000">
+<button onclick="add()">SAVE RECORD</button></div>
+
+<div class="box"><h3>Group Records</h3><table><thead><tr><th>Name</th><th>Type</th><th>Amount</th></tr></thead><tbody id="list"></tbody></table>
+<br><button onclick="share()" style="background:#25D366;color:white">Share Report on WhatsApp</button>
+<br><br><button onclick="clearAll()" style="background:#eee">Clear All (New Cycle)</button></div>
+
+<script>
+let data=JSON.parse(localStorage.getItem('vsla')||'[]');
+function render(){let t=0;let h='';data.forEach(r=>{if(r.type=='Loan')t-=r.amount;else t+=r.amount;h+=`<tr><td>${r.name}</td><td>${r.type}</td><td>${r.amount.toLocaleString()}</td></tr>`});document.getElementById('list').innerHTML=h;document.getElementById('total').innerText='Total in Box: '+t.toLocaleString()+' UGX';}
+function add(){let n=document.getElementById('name').value;let a=parseInt(document.getElementById('amount').value);if(!n||!a){alert('Fill name and amount');return}data.push({name:n,type:document.getElementById('type').value,amount:a});localStorage.setItem('vsla',JSON.stringify(data));document.getElementById('amount').value='';render();}
+function share(){let t=0;let msg='VSLA SAFE REPORT%0A';data.forEach(r=>{if(r.type=='Loan')t-=r.amount;else t+=r.amount;msg+=r.name+' - '+r.type+' - '+r.amount+'%0A'});msg+='TOTAL IN BOX: '+t;window.open('https://wa.me/?text='+msg);}
+function clearAll(){if(confirm('Clear all records?')){data=[];localStorage.removeItem('vsla');render();}}
+render();
+</script>
+</body></html>
