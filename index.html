@@ -120,5 +120,8 @@ async function addTx(){
 }
 async function logout(){await supabase.auth.signOut();location.reload();}
 supabase.auth.getSession().then(async ({data})=>{if(data.session){currentUser=data.session.user;await loadProfile();}});
-</script>
+
+window.signIn = signIn;
+window.signUp = signUp;
+window.signOut = signOut;</script>
 </body></html>
