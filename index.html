@@ -1,60 +1,124 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>VSLA SAFE</title>
-<style>body{margin:0;font-family:Arial;background:#fdf8f0;text-align:center}.top{background:#1a3a2a;color:white;padding:25px}.box{background:white;margin:12px auto;max-width:650px;padding:15px;border-radius:12px;text-align:left}input,select{width:95%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px}button{background:#e8b400;border:none;padding:12px;width:100%;border-radius:30px;font-weight:bold;font-size:16px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #eee;padding:7px;text-align:left}.green{color:green;font-weight:bold}.red{color:red;font-weight:bold}.lock{background:#fff3cd;border:1px solid #e8b400}</style>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>VSLA SAFE v4</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>body{margin:0;font-family:Arial;background:#fdf8f0;text-align:center}.top{background:#1a3a2a;color:white;padding:20px}.box{background:white;margin:12px auto;max-width:650px;padding:15px;border-radius:12px;text-align:left}input,select{width:95%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px}button{background:#e8b400;border:none;padding:12px;width:100%;border-radius:30px;font-weight:bold}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #eee;padding:7px;text-align:left}.green{color:green;font-weight:bold}.red{color:red;font-weight:bold}.hidden{display:none}</style>
 </head><body>
-<div class="top"><h1>VSLA SAFE 🔒</h1><p>No Cash In Hands. Everything On Record.</p><h2 id="total">Total in Box: 0 UGX</h2><p id="lockStatus" style="font-size:13px"></p></div>
+<div class="top"><h1>VSLA SAFE 🔒 v4</h1><p id="welcome">Please Login</p><h2 id="total">Total in Box: -</h2></div>
 
-<div class="box lock"><h3>🔐 Chairperson PIN - Do This Once</h3>
-<p style="font-size:13px">Set a PIN so only you can clear records. Keep it secret. Default if you never set: 1234</p>
-<input id="newPin" type="password" inputmode="numeric" placeholder="Set New PIN e.g. 1234">
-<button onclick="setPin()" style="background:#1a3a2a;color:white">SET / CHANGE PIN</button>
-<p id="pinMsg" style="font-size:13px;color:green"></p></div>
+<div class="box" id="authBox">
+<h3>Login / Sign Up</h3>
+<input id="email" placeholder="Email e.g. amina@gmail.com">
+<input id="pass" type="password" placeholder="Password">
+<input id="fullName" placeholder="Full Name e.g. Amina Nakato">
+<label><input type="checkbox" id="isChair" style="width:auto"> I am Chairperson - I can see all</label>
+<br><br><button onclick="signUp()" style="background:#1a3a2a;color:white">SIGN UP</button><br><br>
+<button onclick="signIn()">LOGIN</button>
+<p id="authMsg" style="font-size:13px;color:red"></p>
+</div>
 
-<div class="box"><h3>1. Add Record</h3>
-<input id="name" placeholder="Member Name e.g. Amina">
+<div class="box hidden" id="mainBox">
+<h3>My Balance - Only You Can See This</h3>
+<p>Saved: <b id="mySaved">0</b> | Loan Left: <b id="myLoan" class="red">0</b> | Net: <b id="myNet">0</b></p>
+<h3>Add Record</h3>
 <select id="type"><option value="Savings">Savings +</option><option value="Loan">Loan Out -</option><option value="Repayment">Loan Repayment +</option></select>
-<input id="amount" type="number" placeholder="Amount UGX e.g. 20000">
-<button onclick="add()">SAVE RECORD</button></div>
+<input id="amount" type="number" placeholder="Amount UGX">
+<button onclick="addTx()">SAVE RECORD</button>
+<br><br><button onclick="logout()" style="background:#eee">LOGOUT</button>
+</div>
 
-<div class="box"><h3>2. Each Member's Balance</h3>
+<div class="box hidden" id="chairBox">
+<h3>👑 Chairperson Dashboard - All Members</h3>
 <table><thead><tr><th>Name</th><th>Saved</th><th>Loan Left</th><th>Net</th></tr></thead><tbody id="balances"></tbody></table>
-<p style="font-size:12px;color:#666">Net = Saved - Loan Left. If Net is red, member still owes group.</p></div>
+</div>
 
-<div class="box"><h3>3. Loan Interest Calculator</h3>
-<input id="loanAmt" type="number" placeholder="Loan Amount e.g. 100000">
-<input id="rate" type="number" placeholder="Interest % per month e.g. 10">
-<input id="months" type="number" placeholder="Months e.g. 2">
-<button onclick="calc()" style="background:#1a3a2a;color:white">CALCULATE LOAN</button>
-<p id="calcResult" style="font-weight:bold"></p></div>
-
-<div class="box"><h3>Group Records</h3><table><thead><tr><th>Name</th><th>Type</th><th>Amount</th></tr></thead><tbody id="list"></tbody></table>
-<br><button onclick="share()" style="background:#25D366;color:white">Share Report on WhatsApp</button>
-<br><br><button onclick="clearAll()" style="background:#eee">Clear All (Needs Chairperson PIN)</button></div>
+<div class="box hidden" id="listBox">
+<h3>My Records</h3>
+<table><thead><tr><th>Type</th><th>Amount</th><th>Date</th></tr></thead><tbody id="list"></tbody></table>
+</div>
 
 <script>
-let data=JSON.parse(localStorage.getItem('vsla')||'[]');
-function getPin(){return localStorage.getItem('vsla_pin')||'1234';}
-function setPin(){let p=document.getElementById('newPin').value.trim();if(p.length<4){alert('PIN must be at least 4 numbers');return}localStorage.setItem('vsla_pin',p);document.getElementById('pinMsg').innerText='✅ PIN saved! Only chairperson can now clear records.';document.getElementById('newPin').value='';updateLock();}
-function updateLock(){document.getElementById('lockStatus').innerText=localStorage.getItem('vsla_pin')?'🔒 Protected by Chairperson PIN':'🔒 Protected - Default PIN is 1234 - Change it above';}
-function render(){
- let t=0;let h='';let members={};
- data.forEach(r=>{
-  if(!members[r.name]) members[r.name]={saved:0,loan:0,repaid:0};
-  if(r.type=='Savings'){t+=r.amount;members[r.name].saved+=r.amount;}
-  if(r.type=='Loan'){t-=r.amount;members[r.name].loan+=r.amount;}
-  if(r.type=='Repayment'){t+=r.amount;members[r.name].repaid+=r.amount;}
-  h+=`<tr><td>${r.name}</td><td>${r.type}</td><td>${r.amount.toLocaleString()}</td></tr>`;
- });
- document.getElementById('list').innerHTML=h;
- document.getElementById('total').innerText='Total in Box: '+t.toLocaleString()+' UGX';
- let bh='';
- for(let n in members){let m=members[n];let left=m.loan-m.repaid;let net=m.saved-left;bh+=`<tr><td><b>${n}</b></td><td>${m.saved.toLocaleString()}</td><td class="${left>0?'red':'green'}">${left.toLocaleString()}</td><td class="${net<0?'red':'green'}">${net.toLocaleString()}</td></tr>`;}
- document.getElementById('balances').innerHTML=bh||'<tr><td colspan=4>No members yet</td></tr>';
+const SUPABASE_URL = "https://nvifqvixjvcfoflnqdle.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Gem7yY1uuCdSv8rsqtFCDA_vFLFhO3Y";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser=null, currentProfile=null;
+
+async function signUp(){
+  let email=document.getElementById('email').value.trim();
+  let pass=document.getElementById('pass').value;
+  let name=document.getElementById('fullName').value.trim();
+  if(!email||!pass||!name){alert('Fill email, password and name');return}
+  let {data,error}=await supabase.auth.signUp({email,password:pass});
+  if(error){document.getElementById('authMsg').innerText=error.message;return}
+  let user=data.user;
+  // Create profile - chairperson or member
+  let role=document.getElementById('isChair').checked?'chairperson':'member';
+  await supabase.from('profiles').insert({id:user.id,full_name:name,role:role});
+  alert('Account created! Now click LOGIN');
 }
-function add(){let n=document.getElementById('name').value.trim();let a=parseInt(document.getElementById('amount').value);if(!n||!a){alert('Fill name and amount');return}data.push({name:n,type:document.getElementById('type').value,amount:a});localStorage.setItem('vsla',JSON.stringify(data));document.getElementById('amount').value='';render();}
-function calc(){let p=parseInt(document.getElementById('loanAmt').value)||0;let r=parseFloat(document.getElementById('rate').value)||0;let mo=parseInt(document.getElementById('months').value)||1;let interest=p*(r/100)*mo;let total=p+interest;let monthly=Math.round(total/mo);document.getElementById('calcResult').innerText=`Borrow ${p.toLocaleString()} UGX at ${r}% for ${mo} months = Interest ${interest.toLocaleString()} UGX. Total to pay back: ${total.toLocaleString()} UGX. Pay ${monthly.toLocaleString()} UGX per month.`;}
-function share(){let t=0;let msg='VSLA SAFE REPORT%0A';data.forEach(r=>{if(r.type=='Loan')t-=r.amount;else t+=r.amount;msg+=r.name+' - '+r.type+' - '+r.amount+'%0A'});msg+='TOTAL IN BOX: '+t;window.open('https://wa.me/?text='+msg);}
-function clearAll(){let entered=prompt('Chairperson PIN needed to clear all records:');if(entered===null)return;if(entered!==getPin()){alert('❌ Wrong PIN! Records NOT cleared.');return}if(confirm('Correct PIN. Clear all records for new cycle?')){data=[];localStorage.removeItem('vsla');render();}}
-render();updateLock();
+async function signIn(){
+  let email=document.getElementById('email').value.trim();
+  let pass=document.getElementById('pass').value;
+  let {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
+  if(error){document.getElementById('authMsg').innerText=error.message;return}
+  currentUser=data.user;
+  await loadProfile();
+}
+async function loadProfile(){
+  let {data}=await supabase.from('profiles').select('*').eq('id',currentUser.id).single();
+  currentProfile=data;
+  document.getElementById('authBox').classList.add('hidden');
+  document.getElementById('mainBox').classList.remove('hidden');
+  document.getElementById('listBox').classList.remove('hidden');
+  document.getElementById('welcome').innerText='Welcome '+ (data?.full_name||'') + ' - ' + (data?.role||'member');
+  if(data?.role==='chairperson' || data?.role==='treasurer'){
+    document.getElementById('chairBox').classList.remove('hidden');
+  }
+  loadData();
+}
+async function loadData(){
+  // Member sees ONLY own - RLS enforces this in Supabase
+  let {data}=await supabase.from('transactions').select('*').order('created_at',{ascending:false});
+  let mySaved=0,myLoan=0,myRepaid=0;
+  let h='';
+  (data||[]).forEach(r=>{
+    if(r.type==='Savings') mySaved+=r.amount;
+    if(r.type==='Loan') myLoan+=r.amount;
+    if(r.type==='Repayment') myRepaid+=r.amount;
+    h+=`<tr><td>${r.type}</td><td>${r.amount.toLocaleString()}</td><td>${new Date(r.created_at).toLocaleDateString()}</td></tr>`;
+  });
+  let left=myLoan-myRepaid; let net=mySaved-left;
+  document.getElementById('mySaved').innerText=mySaved.toLocaleString();
+  document.getElementById('myLoan').innerText=left.toLocaleString();
+  document.getElementById('myNet').innerText=net.toLocaleString();
+  document.getElementById('list').innerHTML=h||'<tr><td colspan=3>No records yet</td></tr>';
+  // Chairperson view - needs to see all. We try to fetch all, RLS will allow if chairperson
+  if(currentProfile?.role==='chairperson'){
+    let {data:all}=await supabase.from('transactions').select('*');
+    let members={}; let total=0;
+    (all||[]).forEach(r=>{
+      if(!members[r.member_name]) members[r.member_name]={saved:0,loan:0,repaid:0};
+      if(r.type==='Savings'){total+=r.amount;members[r.member_name].saved+=r.amount}
+      if(r.type==='Loan'){total-=r.amount;members[r.member_name].loan+=r.amount}
+      if(r.type==='Repayment'){total+=r.amount;members[r.member_name].repaid+=r.amount}
+    });
+    document.getElementById('total').innerText='Total in Box: '+total.toLocaleString()+' UGX';
+    let bh='';
+    for(let n in members){let m=members[n];let l=m.loan-m.repaid;let net2=m.saved-l;bh+=`<tr><td><b>${n}</b></td><td>${m.saved.toLocaleString()}</td><td class="${l>0?'red':'green'}">${l.toLocaleString()}</td><td class="${net2<0?'red':'green'}">${net2.toLocaleString()}</td></tr>`}
+    document.getElementById('balances').innerHTML=bh||'<tr><td colspan=4>No members yet</td></tr>';
+  } else {
+    document.getElementById('total').innerText='Your Total: Hidden - Chairperson sees group total';
+  }
+}
+async function addTx(){
+  let amt=parseInt(document.getElementById('amount').value);
+  if(!amt){alert('Enter amount');return}
+  let type=document.getElementById('type').value;
+  let {error}=await supabase.from('transactions').insert({member_id:currentUser.id, member_name:currentProfile.full_name, type:type, amount:amt, payment_method:'Manual'});
+  if(error){alert(error.message);return}
+  document.getElementById('amount').value='';
+  loadData();
+}
+async function logout(){await supabase.auth.signOut();location.reload();}
+supabase.auth.getSession().then(async ({data})=>{if(data.session){currentUser=data.session.user;await loadProfile();}});
 </script>
 </body></html>
