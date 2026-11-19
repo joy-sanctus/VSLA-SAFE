@@ -67,7 +67,10 @@ async function loadBalance(){
   document.getElementById('mySaved').innerText = s;
   document.getElementById('myLoan').innerText = l;
   document.getElementById('myNet').innerText = s - l;
-}
+  // Chairperson total
+  const {data: total} = await supabaseClient.rpc('get_total_in_box');
+  const el = document.getElementById('totalBox') || document.getElementById('totalInBox');
+  if(el && total !== null) el.innerText = 'Total in Box: ' + total;}
 async function addTx(type){
   const amt = Number(document.getElementById('amount').value);
   if(!amt || amt<=0){ document.getElementById('txMsg').innerText='Enter amount first'; return; }
