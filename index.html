@@ -60,7 +60,8 @@ async function logout(){
   location.reload();
 }
 async function loadBalance(){
-  const {data} = await supabaseClient.from('transactions').select('*').eq('member_id', currentUser.id);
+  const {data, error} = await supabaseClient.from('transactions').select('*');
+  if(error){ document.getElementById('txMsg').innerText = 'Load error: ' + error.message; return; }
   let s=0, l=0;
   (data||[]).forEach(t=>{ if(t.type==='saving') s+=Number(t.amount); if(t.type==='loan') l+=Number(t.amount); if(t.type==='repay') l-=Number(t.amount); });
   document.getElementById('mySaved').innerText = s;
