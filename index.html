@@ -18,7 +18,12 @@
 
 <div class="box hidden" id="mainBox">
 <h3>My Balance - Only You Can See This</h3>
-<p>Saved: <b id="mySaved">0</b> | Loan Left: <b id="myLoan">0</b> | Net: <b id="myNet">0</b></p>
+<p>Saved: <b id="mySaved">0</b> | Loan Left: <b id="myLoan">0</b> | Net: <b id="myNet">0</b></p> <input id="amount" type="number" placeholder="Amount e.g. 10000">
+<br><br>
+<button onclick="addTx('saving')">ADD SAVING</button>
+<button onclick="addTx('loan')">ADD LOAN</button>
+<button onclick="addTx('repay')">PAY LOAN</button>
+<p id="txMsg" style="color:green"></p>
 <button onclick="logout()">LOGOUT</button>
 </div>
 
@@ -47,14 +52,31 @@ async function signIn(){
   currentUser = data.user;
   document.getElementById('welcome').innerText = "Welcome " + email;
   document.getElementById('authBox').classList.add('hidden');
-  document.getElementById('mainBox').classList.remove('hidden');
+  document.getElementById('mainBox').classList.remove('hidden');loadBalance();
 }
 
 async function logout(){
   await supabaseClient.auth.signOut();
   location.reload();
 }
-
+async function loadBalance(){
+  const {data} = await supabaseClient.from('transactions').select('*').eq('user_id', currentUser.id);
+  let s=0, l=0;
+  (data||[]).forEach(t=>{ if(t.type==='saving') s+=Number(t.amount); if(t.type==='loan') l+=Number(t.amount); if(t.type==='repay') l-=Number(t.amount); });
+  document.getElementById('mySaved').innerText = s;
+  document.getElementById('myLoan').innerText = l;
+  document.getElementById('myNet').innerText = s - l;
+}
+async function addTx(type){
+  const amt = Number(document.getElementById('amount').value);
+  if(!amt || amt<=0){ document.getElementById('txMsg').innerText='Enter amount first'; return; }
+  const {error} = await supabaseClient.from('transactions').insert([{user_id: currentUser.id, type: type, amount: amt}]);
+  if(error){ document.getElementById('txMsg').innerText = error.message; return; }
+  document.getElementById('txMsg').innerText = 'Saved!';
+  document.getElementById('amount').value='';
+  loadBalance();
+}
+window.addTx = addTx;
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
