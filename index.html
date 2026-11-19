@@ -4,7 +4,7 @@
 <style>body{margin:0;font-family:Arial;background:#f0f0f0;text-align:center}.top{background:#1a3a2a;color:white;padding:20px}.box{background:white;max-width:400px;margin:20px auto;padding:20px;border-radius:10px}input{width:90%;padding:10px;margin:5px}button{background:#1a3a2a;color:white;padding:10px 20px;border:none;cursor:pointer;margin:5px}.hidden{display:none}</style>
 </head><body>
 <div class="top"><h1>VSLA SAFE 🔒 v5</h1><p id="welcome">Please Log In</p><h2 id="total"><span id="totalBox">Total in Box: </span></h2><p id="balance">My Balance: Saved: <span id="mySaved">0</span> | Loan: <span id="myLoan">0</span> | Net: <span id="myNet">0</span></p>
-
+<div id="memberList" style="display:none; background:white; color:black; padding:15px; border-radius:10px; margin-top:15px; text-align:left;"></div>
 <div class="box" id="authBox">
 <h3>Login / Sign Up</h3>
 <input id="email" placeholder="Email e.g. amina@gmail.com">
@@ -73,7 +73,16 @@ const el = document.getElementById('totalBox') || document.getElementById('total
 const totalRow = document.getElementById('total');
 if(total == null){ if(totalRow) totalRow.style.display = 'none'; }
 else { if(totalRow) totalRow.style.display = ''; if(el) el.innerText = 'Total in Box: ' + total; }
-}
+// Chair member list
+const {data: members} = await supabaseClient.rpc('get_member_balances');
+const listEl = document.getElementById('memberList');
+if(listEl && members && members.length > 0){
+  listEl.style.display = 'block';
+  listEl.innerHTML = '<h3>All Members</h3>' + members.map(m => 
+    `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${m.email}</b> (${m.role})<br>Saved: ${m.saved} | Loan: ${m.loan} | Net: ${m.net}</div>`
+  ).join('');
+} else if(listEl) { listEl.style.display = 'none'; }
+  }
   async function addTx(type){
   const amt = Number(document.getElementById('amount').value);
   if(!amt || amt<=0){ document.getElementById('txMsg').innerText='Enter amount first'; return; }
