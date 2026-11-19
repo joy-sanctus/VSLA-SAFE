@@ -60,7 +60,7 @@ async function logout(){
   location.reload();
 }
 async function loadBalance(){
-  const {data} = await supabaseClient.from('transactions').select('*').eq('user_id', currentUser.id);
+  const {data} = await supabaseClient.from('transactions').select('*').eq('member_id', currentUser.id);
   let s=0, l=0;
   (data||[]).forEach(t=>{ if(t.type==='saving') s+=Number(t.amount); if(t.type==='loan') l+=Number(t.amount); if(t.type==='repay') l-=Number(t.amount); });
   document.getElementById('mySaved').innerText = s;
@@ -70,7 +70,7 @@ async function loadBalance(){
 async function addTx(type){
   const amt = Number(document.getElementById('amount').value);
   if(!amt || amt<=0){ document.getElementById('txMsg').innerText='Enter amount first'; return; }
-  const {error} = await supabaseClient.from('transactions').insert([{user_id: currentUser.id, type: type, amount: amt}]);
+  const {error} = await supabaseClient.from('transactions').insert([{member_id: currentUser.id, type: type, amount: amt}]);
   if(error){ document.getElementById('txMsg').innerText = error.message; return; }
   document.getElementById('txMsg').innerText = 'Saved!';
   document.getElementById('amount').value='';
