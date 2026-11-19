@@ -73,7 +73,8 @@ const el = document.getElementById('totalBox') || document.getElementById('total
 const totalRow = document.getElementById('total');
 if(total == null){ if(totalRow) totalRow.style.display = 'none'; }
 else { if(totalRow) totalRow.style.display = ''; if(el) el.innerText = 'Total in Box: ' + total; }
-async function addTx(type){
+}
+  async function addTx(type){
   const amt = Number(document.getElementById('amount').value);
   if(!amt || amt<=0){ document.getElementById('txMsg').innerText='Enter amount first'; return; }
   const {error} = await supabaseClient.from('transactions').insert([{member_id: currentUser.id, type: type, amount: amt}]);
