@@ -73,15 +73,22 @@ const el = document.getElementById('totalBox') || document.getElementById('total
 const totalRow = document.getElementById('total');
 if(total == null){ if(totalRow) totalRow.style.display = 'none'; }
 else { if(totalRow) totalRow.style.display = ''; if(el) el.innerText = 'Total in Box: ' + total; }
-// Chair member list
-const {data: members} = await supabaseClient.rpc('get_member_balances');
-const listEl = document.getElementById('memberList');
-if(listEl && members && members.length > 0){
-  listEl.style.display = 'block';
-  listEl.innerHTML = '<h3>All Members</h3>' + members.map(m => 
-    `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${m.email}</b> (${m.role})<br>Saved: ${m.saved} | Loan: ${m.loan} | Net: ${m.net}</div>`
-  ).join('');
-} else if(listEl) { listEl.style.display = 'none'; }
+// Chair member list - direct, no function
+try {
+  const {data: profs} = await supabaseClient.from('profiles').select('id, role');
+  const {data: txs} = await supabaseClient.from('transactions').select('user_id, type, amount');
+  const listEl = document.getElementById('memberList');
+  if(listEl && profs && profs.length > 0){
+    listEl.style.display = 'block';
+    listEl.innerHTML = '<h3>All Members</h3>' + profs.map(p => {
+      const myTxs = (txs || []).filter(t => t.user_id === p.id);
+      const saved = myTxs.filter(t => t.type === 'saving').reduce((s,t) => s + Number(t.amount), 0);
+      const loan = myTxs.filter(t => t.type === 'loan').reduce((s,t) => s + Number(t.amount), 0);
+      const repay = myTxs.filter(t => t.type === 'repay').reduce((s,t) => s + Number(t.amount), 0);
+      return `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${p.id.slice(0,8)}</b> (${p.role})<br>Saved: ${saved} | Loan: ${loan} | Net: ${saved - loan + repay}</div>`;
+    }).join('');
+  }
+} catch(e) { console.log('member list error', e); }
   }
   async function addTx(type){
   const amt = Number(document.getElementById('amount').value);
