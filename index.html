@@ -73,19 +73,23 @@ const el = document.getElementById('totalBox') || document.getElementById('total
 const totalRow = document.getElementById('total');
 if(total == null){ if(totalRow) totalRow.style.display = 'none'; }
 else { if(totalRow) totalRow.style.display = ''; if(el) el.innerText = 'Total in Box: ' + total; }
-// Chair member list - direct, no function
+// Chair member list - built from transactions, so Mary/John show
 try {
-  const {data: profs} = await supabaseClient.from('profiles').select('id, role, email');
-  const {data: txs} = await supabaseClient.from('transactions').select('user_id, type, amount');
+  const {data: txs} = await supabaseClient.from('transactions').select('member_id, member_name, type, amount');
   const listEl = document.getElementById('memberList');
-  if(listEl && profs && profs.length > 0){
+  if(listEl && txs && txs.length > 0){
     listEl.style.display = 'block';
-    listEl.innerHTML = '<h3>All Members</h3>' + profs.map(p => {
-      const myTxs = (txs || []).filter(t => t.user_id === p.id);
-      const saved = myTxs.filter(t => t.type === 'saving').reduce((s,t) => s + Number(t.amount), 0);
-      const loan = myTxs.filter(t => t.type === 'loan').reduce((s,t) => s + Number(t.amount), 0);
-      const repay = myTxs.filter(t => t.type === 'repay').reduce((s,t) => s + Number(t.amount), 0);
-      return `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${p.email || p.id.slice(0,8)}</b> (${p.role})<br>Saved: ${saved} | Loan: ${loan} | Net: ${saved - loan + repay}</div>`;
+    const members = {};
+    txs.forEach(t => {
+      const key = t.member_name || t.member_id || 'Unknown';
+      if(!members[key]) members[key] = { name: key, saved: 0, loan: 0, repay: 0 };
+      if(t.type === 'saving') members[key].saved += Number(t.amount);
+      if(t.type === 'loan') members[key].loan += Number(t.amount);
+      if(t.type === 'repay') members[key].repay += Number(t.amount);
+    });
+    listEl.innerHTML = '<h3>All Members</h3>' + Object.values(members).map(m => {
+      const net = m.saved - m.loan + m.repay;
+      return `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${m.name}</b><br>Saved: ${m.saved} | Loan: ${m.loan} | Net: ${net}</div>`;
     }).join('');
   }
 } catch(e) { console.log('member list error', e); }
