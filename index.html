@@ -75,7 +75,7 @@ if(total == null){ if(totalRow) totalRow.style.display = 'none'; }
 else { if(totalRow) totalRow.style.display = ''; if(el) el.innerText = 'Total in Box: ' + total; }
 // Chair member list - direct, no function
 try {
-  const {data: profs} = await supabaseClient.from('profiles').select('id, role');
+  const {data: profs} = await supabaseClient.from('profiles').select('id, role, email');
   const {data: txs} = await supabaseClient.from('transactions').select('user_id, type, amount');
   const listEl = document.getElementById('memberList');
   if(listEl && profs && profs.length > 0){
@@ -85,7 +85,7 @@ try {
       const saved = myTxs.filter(t => t.type === 'saving').reduce((s,t) => s + Number(t.amount), 0);
       const loan = myTxs.filter(t => t.type === 'loan').reduce((s,t) => s + Number(t.amount), 0);
       const repay = myTxs.filter(t => t.type === 'repay').reduce((s,t) => s + Number(t.amount), 0);
-      return `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${p.id.slice(0,8)}</b> (${p.role})<br>Saved: ${saved} | Loan: ${loan} | Net: ${saved - loan + repay}</div>`;
+      return `<div style="border-bottom:1px solid #ddd; padding:8px 0;"><b>${p.email || p.id.slice(0,8)}</b> (${p.role})<br>Saved: ${saved} | Loan: ${loan} | Net: ${saved - loan + repay}</div>`;
     }).join('');
   }
 } catch(e) { console.log('member list error', e); }
