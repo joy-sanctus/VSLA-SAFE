@@ -77,8 +77,13 @@ else { if(totalRow) totalRow.style.display = ''; if(el) el.innerText = 'Total in
 try {
   const {data: txs} = await supabaseClient.from('transactions').select('member_id, member_name, type, amount');
   const listEl = document.getElementById('memberList');
-  if(listEl && txs && txs.length > 0){
-    listEl.style.display = 'block';
+  if(listEl){
+  listEl.style.display = 'block';
+  if(!txs || txs.length === 0){
+    listEl.innerHTML = '<h3>All Members</h3><p>No transactions found - RLS still blocking. Run Fix 1.</p>';
+    return;
+  }
+    
     const members = {};
     txs.forEach(t => {
       const key = t.member_name || t.member_id || 'Unknown';
